@@ -30,5 +30,10 @@
       "name": "English",
       "path": "lang/en.json"
     }
-  ]
+  ],
+  "url": "https://github.com/NeroHeiser/Map-Grid-Size",
+  "manifest": "https://raw.githubusercontent.com/NeroHeiser/Map-Grid-Size/main/module.json",
+  "download": "https://github.com/NeroHeiser/Map-Grid-Size/archive/refs/heads/main.zip",
+  "readme": "https://github.com/NeroHeiser/Map-Grid-Size/blob/main/README.md",
+  "bugs": "https://github.com/NeroHeiser/Map-Grid-Size/issues"
 }
