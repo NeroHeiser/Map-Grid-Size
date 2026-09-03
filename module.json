@@ -1,0 +1,34 @@
+{
+  "id": "map-grid-sizer",
+  "title": "Map Grid Sizer (Ajuste de Grade por Nome)",
+  "description": "Ajusta automaticamente as dimensões da cena e o número de quadrados de grade (grid) do mapa com base no nome do arquivo (ex: Entrada de Maglura - 30x30.png).",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "12",
+    "verified": "12",
+    "maximum": "14"
+  },
+  "authors": [
+    {
+      "name": "Lopes"
+    }
+  ],
+  "esmodules": [
+    "scripts/main.mjs"
+  ],
+  "styles": [
+    "styles/style.css"
+  ],
+  "languages": [
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json"
+    },
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ]
+}
