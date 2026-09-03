@@ -1,0 +1,48 @@
+{
+  "MAP_GRID_SIZER": {
+    "Buttons": {
+      "AdjustGrid": "Fit Grid by Filename",
+      "AdjustGridTitle": "Calculates the number of grid squares and scene dimensions from the filename (e.g., 30x30)",
+      "Calculating": "Calculating..."
+    },
+    "ContextMenu": {
+      "ResizeScene": "Resize Grid by Filename"
+    },
+    "Notifications": {
+      "SceneResized": "Scene \"{name}\" resized: {cols}x{rows} squares ({size}px per square).",
+      "FormUpdated": "Grid calculated: {cols}x{rows} squares ({size}px each | Dimensions: {width}x{height}px).",
+      "NoImage": "No background image set for this scene.",
+      "NoDimensionsFound": "No grid dimensions (e.g., 30x30) found in filename: \"{file}\".",
+      "LoadImageError": "Could not load image to determine its dimensions: \"{file}\"."
+    },
+    "Settings": {
+      "AutoResizeOnCreate": {
+        "Name": "Auto-Fit on Scene Creation",
+        "Hint": "Automatically fits the grid and scene dimensions when creating a scene with an image that has dimensions in its filename."
+      },
+      "AutoResizeOnUpdate": {
+        "Name": "Auto-Fit on Image Change",
+        "Hint": "Automatically fits the grid and scene dimensions when changing a scene's background image to a file with dimensions in its filename."
+      },
+      "ScenePadding": {
+        "Name": "Scene Padding",
+        "Hint": "Proportion of extra margin padding around the map. 0 ensures the canvas ends exactly at the map borders.",
+        "Choices": {
+          "Zero": "0 (No extra borders, exact map)",
+          "Five": "0.05 (5% margin)",
+          "Ten": "0.10 (10% margin)",
+          "Default": "0.25 (Foundry default)"
+        }
+      },
+      "FixedGridSize": {
+        "Name": "Fixed Grid Size in Pixels (Optional)",
+        "Hint": "If 0, grid size is calculated automatically from the image resolution. If set (e.g. 100), forces all squares to that exact pixel size."
+      },
+      "NotifyOnResize": {
+        "Name": "Show Notifications",
+        "Hint": "Shows a toast notification when a scene is resized."
+      }
+    }
+  }
+}
+

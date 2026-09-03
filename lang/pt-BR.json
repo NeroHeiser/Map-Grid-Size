@@ -1,0 +1,48 @@
+{
+  "MAP_GRID_SIZER": {
+    "Buttons": {
+      "AdjustGrid": "Ajustar Grade pelo Nome",
+      "AdjustGridTitle": "Calcula o número de quadrados e dimensões da cena a partir do nome do arquivo (ex: 30x30)",
+      "Calculating": "Calculando..."
+    },
+    "ContextMenu": {
+      "ResizeScene": "Redimensionar Grid pelo Nome"
+    },
+    "Notifications": {
+      "SceneResized": "Cena \"{name}\" redimensionada: {cols}x{rows} quadrados ({size}px por quadrado).",
+      "FormUpdated": "Grade calculada: {cols}x{rows} quadrados ({size}px cada | Dimensões: {width}x{height}px).",
+      "NoImage": "Nenhuma imagem de fundo definida para esta cena.",
+      "NoDimensionsFound": "Nenhuma dimensão de grade (ex: 30x30) foi encontrada no nome do arquivo: \"{file}\".",
+      "LoadImageError": "Não foi possível carregar a imagem para calcular suas dimensões: \"{file}\"."
+    },
+    "Settings": {
+      "AutoResizeOnCreate": {
+        "Name": "Auto-Ajustar ao Criar Cena",
+        "Hint": "Ajusta automaticamente o número de quadrados e dimensões ao criar uma cena com imagem contendo dimensões no nome (ex: Entrada de Maglura - 30x30.png)."
+      },
+      "AutoResizeOnUpdate": {
+        "Name": "Auto-Ajustar ao Alterar Imagem",
+        "Hint": "Ajusta automaticamente quando a imagem de fundo de uma cena for alterada para um arquivo com dimensões no nome."
+      },
+      "ScenePadding": {
+        "Name": "Padding (Margem) da Cena",
+        "Hint": "Proporção de margem extra ao redor do mapa. 0 garante que a área navegável termine exatamente na borda do mapa.",
+        "Choices": {
+          "Zero": "0 (Sem bordas extras, mapa exato)",
+          "Five": "0.05 (5% de margem)",
+          "Ten": "0.10 (10% de margem)",
+          "Default": "0.25 (Padrão do Foundry)"
+        }
+      },
+      "FixedGridSize": {
+        "Name": "Tamanho Fixo de Grade em Pixels (Opcional)",
+        "Hint": "Se mantiver 0, o tamanho de cada quadrado será calculado automaticamente a partir da resolução real da imagem. Se preencher um valor (ex: 100), forçará todos os quadrados a terem esse tamanho exato."
+      },
+      "NotifyOnResize": {
+        "Name": "Exibir Notificações",
+        "Hint": "Mostra um aviso no canto da tela informando que o mapa foi redimensionado."
+      }
+    }
+  }
+}
+
