@@ -34,8 +34,8 @@ export function parseGridDimensions(filePath) {
   const nameWithoutExt = filename.replace(/\.[a-zA-Z0-9]+$/, "");
 
   // Busca todas as ocorrências de padrões "NUMxNUM"
-  // Aceita: 30x30, 30 x 30, 30X30, etc.
-  const regex = /(?:^|[^\d])(\d+)\s*[xX]\s*(\d+)(?:[^\d]|$)/g;
+  // Aceita: 30x30, 30 x 30, 30X30, etc. (sem consumir delimitadores vizinhos)
+  const regex = /(?<!\d)(\d+)\s*[xX]\s*(\d+)(?!\d)/g;
   const matches = [];
   let match;
 
