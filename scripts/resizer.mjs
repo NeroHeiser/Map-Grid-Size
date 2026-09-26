@@ -1,18 +1,35 @@
 /**
- * Utilitário de cálculo e aplicação de dimensões de grade e cena no Foundry VTT.
+ * Utility functions for grid calculation and scene configuration in Foundry VTT.
  */
 
 /**
- * Obtém as dimensões naturais (largura e altura em pixels) de uma imagem.
- * Utiliza o loadTexture do Foundry com fallback para Image nativo do navegador.
+ * Extracts the image source path from a Scene document or an update changes object.
+ * Supports nested background.src, dot-notation "background.src", and legacy img properties.
  * 
- * @param {string} src - Caminho da imagem
+ * @param {object} target - Scene document or changes object
+ * @returns {string | null}
+ */
+export function getSceneImageSource(target) {
+  if (!target || typeof target !== "object") return null;
+
+  if (typeof foundry !== "undefined" && foundry.utils?.getProperty) {
+    const val = foundry.utils.getProperty(target, "background.src");
+    if (val) return val;
+  }
+
+  return target["background.src"] ?? target.background?.src ?? target.img ?? null;
+}
+
+/**
+ * Retrieves the natural dimensions (width and height in pixels) of an image.
+ * Uses Foundry's loadTexture when available with fallback to native Image element.
+ * 
+ * @param {string} src - Image path or URL
  * @returns {Promise<{ width: number, height: number } | null>}
  */
 export async function getImageDimensions(src) {
   if (!src || typeof src !== "string") return null;
 
-  // Tentativa com API nativa do Foundry VTT (loadTexture / Pixi)
   try {
     if (typeof loadTexture === "function") {
       const tex = await loadTexture(src);
@@ -23,10 +40,9 @@ export async function getImageDimensions(src) {
       }
     }
   } catch (err) {
-    console.warn("Map Grid Sizer | loadTexture falhou, tentando fallback Image:", err);
+    console.warn("Map Grid Sizer | loadTexture failed, falling back to Image:", err);
   }
 
-  // Fallback via objeto Image HTML padrão
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -36,7 +52,7 @@ export async function getImageDimensions(src) {
       });
     };
     img.onerror = (err) => {
-      console.error("Map Grid Sizer | Falha ao carregar textura da imagem:", src, err);
+      console.error("Map Grid Sizer | Failed to load image texture:", src, err);
       resolve(null);
     };
     img.src = src;
@@ -44,15 +60,14 @@ export async function getImageDimensions(src) {
 }
 
 /**
- * Calcula as dimensões finais da cena e o tamanho da grade em pixels
- * de forma que o mapa tenha exatamente o número de colunas e linhas especificado.
+ * Calculates final scene dimensions and grid size in pixels to match exact column and row counts.
  * 
- * @param {number} texWidth - Largura original da imagem em pixels
- * @param {number} texHeight - Altura original da imagem em pixels
- * @param {number} cols - Quantidade de colunas (quadrados na horizontal)
- * @param {number} rows - Quantidade de linhas (quadrados na vertical)
- * @param {object} [options={}] - Opções adicionais
- * @param {number} [options.fixedGridSize=0] - Tamanho fixo de grade (se > 0)
+ * @param {number} texWidth - Image width in pixels
+ * @param {number} texHeight - Image height in pixels
+ * @param {number} cols - Number of grid columns (horizontal squares)
+ * @param {number} rows - Number of grid rows (vertical squares)
+ * @param {object} [options={}] - Additional options
+ * @param {number} [options.fixedGridSize=0] - Fixed grid size if > 0
  * @returns {{ width: number, height: number, gridSize: number, cols: number, rows: number }}
  */
 export function calculateSceneGrid(texWidth, texHeight, cols, rows, options = {}) {
@@ -61,17 +76,14 @@ export function calculateSceneGrid(texWidth, texHeight, cols, rows, options = {}
   if (options.fixedGridSize && options.fixedGridSize >= 50) {
     gridSize = Math.round(options.fixedGridSize);
   } else {
-    // Calcula o tamanho médio do quadrado baseado na resolução da imagem
     const rawGridX = texWidth / cols;
     const rawGridY = texHeight / rows;
     const avgGrid = (rawGridX + rawGridY) / 2;
 
-    // O Foundry VTT exige gridSize >= 50 pixels
+    // Foundry VTT requires gridSize >= 50 pixels
     gridSize = Math.max(50, Math.round(avgGrid));
   }
 
-  // As dimensões da cena são múltiplos exatos do gridSize,
-  // garantindo que width / gridSize == cols e height / gridSize == rows com 0% de desvio
   const sceneWidth = cols * gridSize;
   const sceneHeight = rows * gridSize;
 
@@ -85,13 +97,13 @@ export function calculateSceneGrid(texWidth, texHeight, cols, rows, options = {}
 }
 
 /**
- * Aplica as configurações calculadas a um documento Scene do Foundry VTT.
+ * Applies calculated dimensions to a Foundry VTT Scene document.
  * 
- * @param {Scene} scene - Documento da Cena do Foundry
+ * @param {Scene} scene - Foundry Scene document
  * @param {{ width: number, height: number, gridSize: number, cols: number, rows: number }} dimensions
  * @param {object} [options={}]
- * @param {number} [options.padding] - Proporção de padding (0 a 0.5)
- * @param {boolean} [options.notify=true] - Exibir notificação na tela
+ * @param {number} [options.padding] - Extra scene padding ratio (0 to 0.5)
+ * @param {boolean} [options.notify=true] - Whether to show a UI notification
  * @returns {Promise<Scene>}
  */
 export async function applyGridToScene(scene, dimensions, options = {}) {
@@ -110,7 +122,7 @@ export async function applyGridToScene(scene, dimensions, options = {}) {
     updateData.padding = options.padding;
   }
 
-  // Atualiza a cena passando uma flag customizada para evitar loops no hook updateScene
+  // Pass custom flag to avoid recursive loops in updateScene hook
   const updated = await scene.update(updateData, { mapGridSizerApplied: true });
 
   if (options.notify !== false && ui?.notifications) {
@@ -125,4 +137,3 @@ export async function applyGridToScene(scene, dimensions, options = {}) {
 
   return updated;
 }
-

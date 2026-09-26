@@ -1,20 +1,20 @@
 import { parseGridDimensions } from "./parser.mjs";
-import { getImageDimensions, calculateSceneGrid, applyGridToScene } from "./resizer.mjs";
+import { getImageDimensions, calculateSceneGrid, applyGridToScene, getSceneImageSource } from "./resizer.mjs";
 
 const MODULE_ID = "map-grid-sizer";
 
 /**
- * Processa uma cena: detecta as dimensões no nome do arquivo da imagem de fundo,
- * obtém as dimensões da textura, calcula o grid e aplica na cena.
+ * Processes a scene: detects dimensions in the background image filename,
+ * calculates the grid size, and applies the updated dimensions to the scene.
  * 
- * @param {Scene} scene - Cena do Foundry
- * @param {boolean} [forceNotification=false] - Forçar notificação mesmo se configurado para silenciar
- * @returns {Promise<boolean>} Retorna true se a cena foi redimensionada com sucesso
+ * @param {Scene} scene - Foundry Scene document
+ * @param {boolean} [forceNotification=false] - Force notification even if user muted notifications
+ * @returns {Promise<boolean>} True if resized successfully
  */
 async function processScene(scene, forceNotification = false) {
   if (!scene) return false;
 
-  const src = scene.background?.src || scene.img;
+  const src = getSceneImageSource(scene);
   if (!src) {
     if (forceNotification) {
       ui.notifications.warn(game.i18n.localize("MAP_GRID_SIZER.Notifications.NoImage"));
@@ -53,13 +53,12 @@ async function processScene(scene, forceNotification = false) {
 }
 
 /* ========================================================================= */
-/* HOOKS DE INICIALIZAÇÃO                                                    */
+/* INITIALIZATION HOOKS                                                      */
 /* ========================================================================= */
 
 Hooks.once("init", () => {
-  console.log("Map Grid Sizer | Inicializando módulo...");
+  console.log("Map Grid Sizer | Initializing module...");
 
-  // Configuração: Redimensionar automaticamente ao criar cena
   game.settings.register(MODULE_ID, "autoResizeOnCreate", {
     name: "MAP_GRID_SIZER.Settings.AutoResizeOnCreate.Name",
     hint: "MAP_GRID_SIZER.Settings.AutoResizeOnCreate.Hint",
@@ -69,7 +68,6 @@ Hooks.once("init", () => {
     default: true
   });
 
-  // Configuração: Redimensionar automaticamente ao alterar a imagem de fundo
   game.settings.register(MODULE_ID, "autoResizeOnUpdate", {
     name: "MAP_GRID_SIZER.Settings.AutoResizeOnUpdate.Name",
     hint: "MAP_GRID_SIZER.Settings.AutoResizeOnUpdate.Hint",
@@ -79,7 +77,6 @@ Hooks.once("init", () => {
     default: true
   });
 
-  // Configuração: Padding padrão da cena ao ajustar
   game.settings.register(MODULE_ID, "scenePadding", {
     name: "MAP_GRID_SIZER.Settings.ScenePadding.Name",
     hint: "MAP_GRID_SIZER.Settings.ScenePadding.Hint",
@@ -95,7 +92,6 @@ Hooks.once("init", () => {
     }
   });
 
-  // Configuração: Tamanho fixo de grade (opcional, 0 = automático)
   game.settings.register(MODULE_ID, "fixedGridSize", {
     name: "MAP_GRID_SIZER.Settings.FixedGridSize.Name",
     hint: "MAP_GRID_SIZER.Settings.FixedGridSize.Hint",
@@ -105,7 +101,6 @@ Hooks.once("init", () => {
     default: 0
   });
 
-  // Configuração: Exibir notificação na UI
   game.settings.register(MODULE_ID, "notifyOnResize", {
     name: "MAP_GRID_SIZER.Settings.NotifyOnResize.Name",
     hint: "MAP_GRID_SIZER.Settings.NotifyOnResize.Hint",
@@ -115,7 +110,6 @@ Hooks.once("init", () => {
     default: true
   });
 
-  // Expõe a API do módulo para macros e outros módulos
   const mod = game.modules.get(MODULE_ID);
   if (mod) {
     mod.api = {
@@ -123,61 +117,56 @@ Hooks.once("init", () => {
       getImageDimensions,
       calculateSceneGrid,
       applyGridToScene,
+      getSceneImageSource,
       processScene
     };
   }
 });
 
 Hooks.once("ready", () => {
-  console.log("Map Grid Sizer | Pronto para uso!");
+  console.log("Map Grid Sizer | Ready!");
 });
 
 /* ========================================================================= */
-/* HOOKS DE CENAS (CRIAÇÃO E ATUALIZAÇÃO)                                    */
+/* SCENE HOOKS                                                               */
 /* ========================================================================= */
 
-// Quando uma cena é criada
 Hooks.on("createScene", async (scene, options, userId) => {
   if (game.user.id !== userId || !game.user.isGM) return;
   if (!game.settings.get(MODULE_ID, "autoResizeOnCreate")) return;
 
-  const src = scene.background?.src || scene.img;
+  const src = getSceneImageSource(scene);
   if (src && parseGridDimensions(src)) {
     await processScene(scene, false);
   }
 });
 
-// Quando o background de uma cena é alterado
 Hooks.on("updateScene", async (scene, changes, options, userId) => {
   if (game.user.id !== userId || !game.user.isGM) return;
-  if (options.mapGridSizerApplied) return; // Evita loop recursivo
+  if (options.mapGridSizerApplied) return;
   if (!game.settings.get(MODULE_ID, "autoResizeOnUpdate")) return;
 
-  const newSrc = changes.background?.src ?? changes.img;
+  const newSrc = getSceneImageSource(changes);
   if (newSrc && parseGridDimensions(newSrc)) {
     await processScene(scene, false);
   }
 });
 
 /* ========================================================================= */
-/* HOOKS DE INTERFACE (SCENE CONFIG E CONTEXT MENU)                          */
+/* UI HOOKS                                                                  */
 /* ========================================================================= */
 
-// Botão na janela de Configuração da Cena (SceneConfig)
 Hooks.on("renderSceneConfig", (app, html, data) => {
   if (!game.user.isGM) return;
 
   const root = html instanceof HTMLElement ? html : html[0];
   if (!root) return;
 
-  // Localiza o campo de imagem de fundo
   const bgInput = root.querySelector('input[name="background.src"]') || root.querySelector('input[name="img"]');
   if (!bgInput) return;
 
-  // Evita duplicar o botão se já foi injetado
   if (root.querySelector(".map-grid-sizer-btn")) return;
 
-  // Cria o botão de auto-ajuste
   const button = document.createElement("button");
   button.type = "button";
   button.className = "map-grid-sizer-btn";
@@ -187,7 +176,7 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
   button.addEventListener("click", async (event) => {
     event.preventDefault();
 
-    const currentSrc = bgInput.value?.trim() || app.document?.background?.src || app.document?.img;
+    const currentSrc = bgInput.value?.trim() || getSceneImageSource(app.document);
     if (!currentSrc) {
       ui.notifications.warn(game.i18n.localize("MAP_GRID_SIZER.Notifications.NoImage"));
       return;
@@ -199,7 +188,6 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
       return;
     }
 
-    // Feedback visual de carregamento no botão
     const originalText = button.innerHTML;
     button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${game.i18n.localize("MAP_GRID_SIZER.Buttons.Calculating")}`;
     button.disabled = true;
@@ -217,7 +205,6 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
         fixedGridSize
       });
 
-      // Preenche os campos do formulário da SceneConfig
       const widthInput = root.querySelector('input[name="width"]');
       const heightInput = root.querySelector('input[name="height"]');
       const gridSizeInput = root.querySelector('input[name="grid.size"]') || root.querySelector('input[name="gridSize"]');
@@ -237,7 +224,7 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
         gridSizeInput.dispatchEvent(new Event("change", { bubbles: true }));
       }
       if (gridTypeSelect) {
-        gridTypeSelect.value = "1"; // Quadrados (SQUARE)
+        gridTypeSelect.value = "1";
         gridTypeSelect.dispatchEvent(new Event("change", { bubbles: true }));
       }
       if (paddingInput && typeof padding === "number") {
@@ -258,14 +245,12 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
     }
   });
 
-  // Insere o botão logo após o input de background ou seu container
   const parentContainer = bgInput.closest(".form-group") || bgInput.parentElement;
   if (parentContainer) {
     parentContainer.appendChild(button);
   }
 });
 
-// Adiciona opção ao Menu de Contexto (botão direito) na lista de Cenas da barra lateral
 Hooks.on("getSceneDirectoryEntryContext", (html, entryOptions) => {
   entryOptions.push({
     name: "MAP_GRID_SIZER.ContextMenu.ResizeScene",
@@ -275,7 +260,7 @@ Hooks.on("getSceneDirectoryEntryContext", (html, entryOptions) => {
       const li = target[0] ?? target;
       const sceneId = li.dataset?.documentId || li.dataset?.entryId || li.getAttribute?.("data-document-id") || li.getAttribute?.("data-entry-id");
       const scene = game.scenes?.get(sceneId);
-      const src = scene?.background?.src || scene?.img;
+      const src = getSceneImageSource(scene);
       return !!src;
     },
     callback: async (target) => {
@@ -288,4 +273,3 @@ Hooks.on("getSceneDirectoryEntryContext", (html, entryOptions) => {
     }
   });
 });
-
