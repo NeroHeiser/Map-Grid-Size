@@ -1,84 +1,93 @@
-# Map Grid Sizer (Ajuste de Grade por Nome de Arquivo)
+# Map Grid Sizer
 
-**Map Grid Sizer** é um módulo para o **Foundry VTT** (compatível com v12, v13 e v14) que ajusta automaticamente as dimensões da cena e o tamanho da grade (grid) com base na quantidade de quadrados indicada no nome do arquivo da imagem.
+[English](README.md) | [Português (Brasil)](README.pt-BR.md)
 
----
+[![Foundry VTT](https://img.shields.io/badge/Foundry%20VTT-v12%20|%20v14-orange.svg)](https://foundryvtt.com/)
+[![Version](https://img.shields.io/badge/version-v1.0.1-blue.svg)](module.json)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D20-green.svg)](https://nodejs.org/)
+[![Tests](https://img.shields.io/badge/tests-13%20passed-brightgreen.svg)](tests/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## 🎯 O Problema que este módulo resolve
-
-Ao importar mapas no Foundry VTT (sejam eles baixados de criadores de conteúdo ou feitos por você), é comum que o nome do arquivo informe a quantidade exata de quadrados do mapa (ex: `Entrada de Maglura - 30x30.png` ou `Masmorra - 40x25.webp`).
-
-Sem o módulo, o Mestre precisa:
-1. Calcular manualmente: `largura da imagem ÷ número de colunas = tamanho do grid`.
-2. Abrir a configuração da cena.
-3. Ajustar o Grid Size e torcer para não haver desvios cumulativos de pixels.
-
-Com o **Map Grid Sizer**, tudo isso é feito **automaticamente em 1 segundo**!
+A lightweight automation module for **Foundry Virtual Tabletop (V12 to V14)** that automatically parses map filename dimensions (e.g. `Forest_Path_30x30.png`) to configure scene dimensions and grid sizes in seconds with zero pixel drift.
 
 ---
 
-## 📐 Como funciona a Matemática dos Quadrados
+## Highlights
 
-O módulo garante que o mapa tenha **exatamente o número de quadrados de deslocamento escrito no nome**:
-1. Lê o número de colunas (`cols`) e linhas (`rows`) do nome do arquivo (ex: `30x30` → 30 quadrados de largura por 30 de altura).
-2. Lê a resolução real da imagem (ex: 3000x3000px).
-3. Calcula o tamanho de cada quadrado de grid em pixels inteiros (`gridSize = Math.round(resolução ÷ quadrados)`).
-4. Define a largura da cena como `cols * gridSize` e a altura como `rows * gridSize`.
-
-> **Resultado:** Cada quadrado de deslocamento coincide 100% com as linhas do mapa desenhado, com **zero desvio acumulado** e tokens se movendo exatamente na quantidade de quadrados prevista.
+- **Instant Zero-Drift Calibration:** Automatically aligns scene pixel bounds and grid cell sizes to the exact column/row count embedded in image filenames.
+- **Robust Regex Engine:** Advanced non-consuming lookaround regex matching (`(?<!\d)(\d+)\s*[xX]\s*(\d+)(?!\d)`) capable of distinguishing grid dimensions from preceding screen resolutions (e.g., `Map_1920x1080_30x30.png`).
+- **Flexible Workflow Integration:** Runs automatically on scene creation, on background image changes, via an inline button in `SceneConfig`, or through the scene directory context menu.
+- **Safe Geometry Constraints:** Enforces Foundry minimum grid sizing (50px) and clamps padding to zero for clean map borders.
+- **Automated Test Suite:** 13 unit tests verifying dimension extraction, rectangular aspect calculations, edge-case handling, and flat/nested change payloads.
 
 ---
 
-## 🏷️ Padrões de Nomes de Arquivos Suportados
+## Domain and Feature Tables
 
-O módulo detecta de forma inteligente diversos padrões de nomenclatura:
+### Supported Filename Patterns
 
-| Exemplo de Nome de Arquivo | Quadrados de Largura (Colunas) | Quadrados de Altura (Linhas) |
-| :--- | :---: | :---: |
-| `Entrada de Maglura - 30x30.png` | 30 | 30 |
-| `Masmorra_Subterranea_40x25.webp` | 40 | 25 |
-| `Templo Antigo [20 x 30].jpg` | 20 | 30 |
-| `Taverna 15X12.jpeg` | 15 | 12 |
-| `Caverna_50x35_noite.png` | 50 | 35 |
-| `Mapa_30x30_1920x1080.png` | 30 | 30 *(filtra resoluções de tela)* |
+| Filename Pattern | Example Input | Extracted Columns | Extracted Rows | Behavior |
+| :--- | :--- | :---: | :---: | :--- |
+| `NxN` Standard | `Maglura_Entrance_30x30.png` | 30 | 30 | Standard square map grid |
+| `NxM` Rectangular | `Underground_Dungeon_40x25.webp` | 40 | 25 | Rectangular room calculation |
+| Spaced `[N x M]` | `Ancient_Temple_[20 x 30].jpg` | 20 | 30 | Bracketed and spaced pattern matching |
+| Uppercase Delimiter | `Tavern_15X12.jpeg` | 15 | 12 | Case-insensitive `x` delimiter |
+| Screen Resolution Preceding | `Battlemap_1920x1080_30x30.png` | 30 | 30 | Prioritizes true grid candidates over resolutions |
 
----
+### Automation Triggers and Actions
 
-## 🚀 Formas de Uso
-
-### 1. Automático (Ao Criar ou Alterar Cena)
-Ao criar uma nova cena ou selecionar uma imagem de fundo que tenha o padrão `NxN`, o módulo detecta e já configura o grid e dimensões instantaneamente.
-
-### 2. Botão na Janela de Configuração da Cena (`SceneConfig`)
-Ao abrir a edição de qualquer cena, um botão azul **"Ajustar Grade pelo Nome"** é exibido logo abaixo do campo de imagem de fundo. Clicar nele calcula os valores e preenche os campos do formulário na hora para você revisar ou salvar.
-
-### 3. Menu de Contexto (Botão Direito na Cena)
-Na barra lateral direita do Foundry (aba de Cenas), basta clicar com o botão direito sobre qualquer cena e escolher **"Redimensionar Grid pelo Nome"**.
+| Trigger | Location | Behavior |
+| :--- | :--- | :--- |
+| **Scene Pre-Creation** | `preCreateScene` Hook | Automatically detects dimensions from initial image and applies grid settings before first render. |
+| **Image Update** | `updateScene` Hook | Detects background changes (including nested and dot-notation `background.src`) and recalibrates scene. |
+| **Scene Config Form** | `SceneConfig` Header Button | Adds an "Adjust Grid by Name" button below the background field to fill form values without instant saving. |
+| **Context Menu** | Scene Directory | Right-click any scene in the navigation bar to trigger immediate grid recalibration. |
 
 ---
 
-## ⚙️ Configurações do Módulo
+## Architecture and Components
 
-Em **Configurações de Jogo** → **Configurar Módulos** → **Map Grid Sizer**:
-
-- **Auto-Ajustar ao Criar Cena:** Ativa/desativa o ajuste automático ao criar cenas (Padrão: *Ativado*).
-- **Auto-Ajustar ao Alterar Imagem:** Ativa/desativa o ajuste automático ao trocar a imagem de fundo de uma cena (Padrão: *Ativado*).
-- **Padding (Margem) da Cena:** Define a margem extra do Foundry ao redor do mapa. Padrão: `0` (área jogável termina exatamente na borda do mapa).
-- **Tamanho Fixo de Grade em Pixels (Opcional):** Se for `0`, preserva a resolução da imagem. Se definir um valor (ex: `100`), forçará o grid para esse tamanho fixo.
-- **Exibir Notificações:** Exibe mensagem de confirmação na tela informando os quadrados configurados.
+- **`parser.mjs` (`parseGridDimensions`):** Pure utility parsing filename strings with lookaround regex to extract column and row pairs without consuming neighboring delimiters.
+- **`resizer.mjs` (`calculateSceneGrid`, `getSceneImageSource`):** Pure calculation service calculating exact pixel dimensions (`Math.round`), enforcing minimum grid thresholds, and safely resolving nested image source paths.
+- **`main.mjs`:** Foundry lifecycle manager registering settings, attaching lifecycle hooks, and injecting UI controls into `SceneConfig`.
 
 ---
 
-## 📦 Como Instalar no seu Foundry VTT
+## Installation
 
-1. Localize a pasta `Data` do seu Foundry VTT:
-   - **Linux:** `~/.local/share/FoundryVTT/Data/modules/`
-   - **Windows:** `%localappdata%/FoundryVTT/Data/modules/`
-   - **macOS:** `~/Library/Application Support/FoundryVTT/Data/modules/`
-2. Copie esta pasta (ou crie um link simbólico) para a pasta `modules`:
-   ```bash
-   # Exemplo de link simbólico no Linux:
-   ln -s "/run/media/lopes/Hd interno/Programação/Foundry" ~/.local/share/FoundryVTT/Data/modules/map-grid-sizer
-   ```
-3. Abra o Foundry VTT, entre no seu Mundo, vá na aba de **Gerenciar Módulos** e ative o **Map Grid Sizer (Ajuste de Grade por Nome)**.
+Install directly within the Foundry VTT Setup menu using the manifest link:
 
+```text
+https://raw.githubusercontent.com/NeroHeiser/Map-Grid-Size/main/module.json
+```
+
+Or extract the repository archive into your Foundry data folder:
+```text
+<FoundryData>/Data/modules/map-grid-sizer
+```
+
+---
+
+## Automated Testing and Quality
+
+The module includes native automated unit tests executed via the Node.js test runner:
+
+```bash
+# Run the complete test suite
+npm test
+```
+
+Verification coverage:
+- Regex parsing against brackets, whitespace, resolutions, and delimiters.
+- Grid size computation and aspect ratio rounding.
+- Safety boundaries (50px minimum grid clamp, fallback handling).
+- Extraction of `background.src` across nested objects and dot-notation keys.
+
+---
+
+## Compatibility and License
+
+- **Foundry VTT:** Verified for v12 and v14.
+- **System Agnostic:** Operates identically across any game system (dnd5e, pf2e, tormenta20, etc.).
+- **Module Author:** [André Luiz (Lopes / NeroHeiser)](https://github.com/NeroHeiser).
+- **License:** [MIT](LICENSE).
