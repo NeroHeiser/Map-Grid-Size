@@ -1,0 +1,11 @@
+{
+  "name": "map-grid-sizer",
+  "version": "1.0.0",
+  "description": "Foundry VTT module to auto-fit scene dimensions and grid size based on filename patterns.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "author": "Lopes",
+  "license": "MIT"
+}
