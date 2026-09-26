@@ -3,6 +3,24 @@
  */
 
 /**
+ * Extracts the image source path from a Scene document or an update changes object.
+ * Supports nested background.src, dot-notation "background.src", and legacy img properties.
+ * 
+ * @param {object} target - Scene document or changes object
+ * @returns {string | null}
+ */
+export function getSceneImageSource(target) {
+  if (!target || typeof target !== "object") return null;
+
+  if (typeof foundry !== "undefined" && foundry.utils?.getProperty) {
+    const val = foundry.utils.getProperty(target, "background.src");
+    if (val) return val;
+  }
+
+  return target["background.src"] ?? target.background?.src ?? target.img ?? null;
+}
+
+/**
  * Obtém as dimensões naturais (largura e altura em pixels) de uma imagem.
  * Utiliza o loadTexture do Foundry com fallback para Image nativo do navegador.
  * 

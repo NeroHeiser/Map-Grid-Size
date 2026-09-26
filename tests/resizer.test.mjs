@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { calculateSceneGrid } from "../scripts/resizer.mjs";
+import { calculateSceneGrid, getSceneImageSource } from "../scripts/resizer.mjs";
 
 test("calculateSceneGrid computes exact grid size for standard dimensions", () => {
   const result = calculateSceneGrid(3000, 3000, 30, 30);
@@ -56,3 +56,27 @@ test("calculateSceneGrid falls back to auto calculation when fixedGridSize is be
     rows: 30
   });
 });
+
+test("getSceneImageSource extracts background.src from nested object", () => {
+  const doc = { background: { src: "maps/dungeon_30x30.png" } };
+  assert.equal(getSceneImageSource(doc), "maps/dungeon_30x30.png");
+});
+
+test("getSceneImageSource extracts dot-notation background.src from flat change object", () => {
+  const changes = { "background.src": "maps/cave_20x20.webp" };
+  assert.equal(getSceneImageSource(changes), "maps/cave_20x20.webp");
+});
+
+test("getSceneImageSource falls back to legacy img property", () => {
+  const legacyDoc = { img: "maps/legacy_15x15.jpg" };
+  assert.equal(getSceneImageSource(legacyDoc), "maps/legacy_15x15.jpg");
+});
+
+test("getSceneImageSource returns null for invalid inputs or objects without image source", () => {
+  assert.equal(getSceneImageSource(null), null);
+  assert.equal(getSceneImageSource(undefined), null);
+  assert.equal(getSceneImageSource("invalid"), null);
+  assert.equal(getSceneImageSource({}), null);
+  assert.equal(getSceneImageSource({ name: "Scene Without Image" }), null);
+});
+

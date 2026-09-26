@@ -1,5 +1,5 @@
 import { parseGridDimensions } from "./parser.mjs";
-import { getImageDimensions, calculateSceneGrid, applyGridToScene } from "./resizer.mjs";
+import { getImageDimensions, calculateSceneGrid, applyGridToScene, getSceneImageSource } from "./resizer.mjs";
 
 const MODULE_ID = "map-grid-sizer";
 
@@ -14,7 +14,7 @@ const MODULE_ID = "map-grid-sizer";
 async function processScene(scene, forceNotification = false) {
   if (!scene) return false;
 
-  const src = scene.background?.src || scene.img;
+  const src = getSceneImageSource(scene);
   if (!src) {
     if (forceNotification) {
       ui.notifications.warn(game.i18n.localize("MAP_GRID_SIZER.Notifications.NoImage"));
@@ -123,6 +123,7 @@ Hooks.once("init", () => {
       getImageDimensions,
       calculateSceneGrid,
       applyGridToScene,
+      getSceneImageSource,
       processScene
     };
   }
@@ -141,7 +142,7 @@ Hooks.on("createScene", async (scene, options, userId) => {
   if (game.user.id !== userId || !game.user.isGM) return;
   if (!game.settings.get(MODULE_ID, "autoResizeOnCreate")) return;
 
-  const src = scene.background?.src || scene.img;
+  const src = getSceneImageSource(scene);
   if (src && parseGridDimensions(src)) {
     await processScene(scene, false);
   }
@@ -153,7 +154,7 @@ Hooks.on("updateScene", async (scene, changes, options, userId) => {
   if (options.mapGridSizerApplied) return; // Evita loop recursivo
   if (!game.settings.get(MODULE_ID, "autoResizeOnUpdate")) return;
 
-  const newSrc = changes.background?.src ?? changes.img;
+  const newSrc = getSceneImageSource(changes);
   if (newSrc && parseGridDimensions(newSrc)) {
     await processScene(scene, false);
   }
@@ -187,7 +188,7 @@ Hooks.on("renderSceneConfig", (app, html, data) => {
   button.addEventListener("click", async (event) => {
     event.preventDefault();
 
-    const currentSrc = bgInput.value?.trim() || app.document?.background?.src || app.document?.img;
+    const currentSrc = bgInput.value?.trim() || getSceneImageSource(app.document);
     if (!currentSrc) {
       ui.notifications.warn(game.i18n.localize("MAP_GRID_SIZER.Notifications.NoImage"));
       return;
@@ -275,7 +276,7 @@ Hooks.on("getSceneDirectoryEntryContext", (html, entryOptions) => {
       const li = target[0] ?? target;
       const sceneId = li.dataset?.documentId || li.dataset?.entryId || li.getAttribute?.("data-document-id") || li.getAttribute?.("data-entry-id");
       const scene = game.scenes?.get(sceneId);
-      const src = scene?.background?.src || scene?.img;
+      const src = getSceneImageSource(scene);
       return !!src;
     },
     callback: async (target) => {
